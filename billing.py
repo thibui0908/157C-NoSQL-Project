@@ -49,31 +49,32 @@ def billingHome(user):
     a = input("What would you like to do: ")
     if(a == "CB" or a == "cb"):
         #check balance funct
-        checkBalance(user.user_id)
+        checkBalance(user)
     elif(a == "PM" or a == "pm"):
         #payment funct
-        makePayment(user.user_id)
+        makePayment(user)
     elif(a == "X" or a == "x"):
         menu()
     else:
         print("Choose a valid option")
+        billingHome(user)
 
 # Only valid when user is logged in
 
-def checkBalance(user_id):
+def checkBalance(user):
     print("Your balance is: \n")
-    result = colUsers.find_one({"_id": user_id}, { "_id": 0, "balance": 1 })
+    result = colUsers.find_one({"_id": user.user_id}, { "_id": 0, "balance": 1 })
     print(result, " dollars")
 
-    billingHome()
+    billingHome(user)
 
-def makePayment(user_id):
+def makePayment(user):
     amount = input("Enter the amount you want to pay: \n")
 
-    colUsers.update_one({"_id": user_id}, {"$inc": {"balance": float(amount) } } )
+    colUsers.update_one({"_id": user.user_id}, {"$inc": {"balance": float(amount) } } )
 
     print("You successfully made a payment of ", amount, " dollars")
 
-    billingHome()
+    billingHome(user)
 
 
