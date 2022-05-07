@@ -22,7 +22,7 @@ while(query_selection!='q'):
         my_query = {"popularity": {"$gte": float(popularity)}}
     if query_selection == '4':
         year_released = input("Type the release date you would like to search (YYYY): ")
-        my_query = {"release_date": {"gte": datetime.datetime(year_released,1,1)}}
+        my_query = {"release_date" :{"$gte": year_released+"-1-1"}}
     if query_selection == '5':
         runtime = input("Type the maximum runtime (in minutes) you are looking for: ")
         my_query = {"runtime": {"$lte": float(runtime)}}
