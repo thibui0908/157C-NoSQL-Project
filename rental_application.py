@@ -1,3 +1,4 @@
+from billing import *
 import pymongo
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -8,12 +9,12 @@ colBilling = mydb["billing"]
 
 class User:
 
-    def __init__(self, name, username, password):
+    def __init__(self, user_id, name, username, password):
+        self.user_id = user_id
         self.name = name
         self.username = username
         self.password = password
         self.loggedIn = True
-
 
 def home():
     print("-------------------------")
@@ -35,22 +36,22 @@ def register():
     name = input("Name: ")
     username = input("Username: ")
     password = input("Password: ")
-    user = User(name, username, password)
-    userDict = { "name": name, "username": username, "password" : password }
+    user = User(user_id = 0, name= name, username=username, password=password)
+    userDict = { "name": name, "username": username, "password" : password, "balance": 0 }
     x = colUsers.insert_one(userDict)
-    # print(x.inserted_id)
+    user.user_id = x.inserted_id
     print("Successfully Registered, " + user.name)
     home()
-
 
 def login():
     inputUsername     = input("Username: ")
     inputPassword     = input("Password: ")
     userDoc           = colUsers.find_one({"username" : inputUsername, "password" : inputPassword})
+    retrievedId       = userDoc["_id"]
     retrievedName     = userDoc["name"]
     retrievedUsername = userDoc["username"]
     retrievedPassword = userDoc["password"]
-    loggedInUser = User(retrievedName, retrievedUsername, retrievedPassword)
+    loggedInUser = User(retrievedId, retrievedName, retrievedUsername, retrievedPassword)
     if(inputPassword == retrievedPassword):
         print("Welcome, " + loggedInUser.name)
     else:
@@ -58,17 +59,24 @@ def login():
         login()
     menu(loggedInUser)
 
+#home menu
 def menu(loggedInUser):
     print("####################")
     print("--------Menu--------")
     print("Account Settings===1")
     print("Logout=============2")
+
+    #routes to billing
+    print("Billing============3")
+
     print("####################")
     menuOption = input("Enter number to choose option: ")
     if(menuOption == "1"):
         accountSetting(loggedInUser)
     elif(menuOption == "2"):
         exit()
+    elif(menuOption == "3"):
+        billingHome(loggedInUser)
     else:
         print("Choose a valid option")
         menu(loggedInUser)
@@ -154,5 +162,85 @@ def deleteUser(loggedInUser):
 
 def exit():
     quit()
+
+# billing 
+
+
+class Billing:
+
+    def __init__(self, film_title, purchase_date, return_date):
+        self.film_title = film_title
+        self.purchase_date = purchase_date
+        self.return_date = return_date
+
+# to be called when checking out
+
+
+def addBilling(user_id, film_title):
+    purchase_date = datetime.now()
+    return_date = datetime.now() + timedelta(days=10)
+
+    newBilling = Billing(film_title, purchase_date.strftime(
+        "%d-%m-%Y"), return_date.strftime("%d-%m-%Y"))
+
+    billingDict = {"film_title": film_title, purchase_date: str(
+        purchase_date), return_date: str(return_date)}
+
+    #update user's transactions and insert to system's billing db
+    colBilling.insert_one(billingDict)
+    billing = colBilling.find(
+        {"film_title": film_title, "purchase_date": str(purchase_date)})
+    colUsers.update_one({"_id": user_id}, {"$push": {"transactions": billing}})
+
+# system check for unreturned titles
+# call this function to add a penalty
+
+
+def addPenalty(user):
+    colUsers.update_one({"_id": user.user_id}, {
+                        "$inc": {"balance": float(10)}})
+
+
+def billingHome(user):
+    print("-------------------------")
+    print("You're in the billing page")
+    print("Check balance [CB], Make a payment[PM], Return to home [X]")
+    print("-------------------------")
+    a = input("What would you like to do: ")
+    if(a == "CB" or a == "cb"):
+        #check balance funct
+        checkBalance(user)
+    elif(a == "PM" or a == "pm"):
+        #payment funct
+        makePayment(user)
+    elif(a == "X" or a == "x"):
+        menu()
+    else:
+        print("Choose a valid option")
+        billingHome(user)
+
+# Only valid when user is logged in
+
+
+def checkBalance(user):
+    print("Your balance is: \n")
+    result = colUsers.find_one({"_id": user.user_id}, {"_id": 0, "balance": 1})
+    print(result["balance"], " dollars")
+
+    billingHome(user)
+
+
+def makePayment(user):
+    amount = input("Enter the amount you want to pay: \n")
+    
+    amount = float(amount)
+
+    colUsers.update_one({"_id": user.user_id}, {
+                        "$inc": {"balance": amount * (-1)}})
+
+    print("You successfully made a payment of ", amount, " dollars\n")
+    checkBalance(user)
+
+    billingHome(user)
 
 home()
