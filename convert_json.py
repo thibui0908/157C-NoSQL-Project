@@ -60,8 +60,8 @@ def make_json(csvFilePath, jsonFilePath):
  
 # Decide the two file paths according to your
 # computer system
-csvFilePath = r'/Users/ajakasan/Desktop/My Stuff/Class/CS 157C/Project/movies_metadata.csv'
-jsonFilePath = r'/Users/ajakasan/Desktop/My Stuff/Class/CS 157C/Project/test.json'
+csvFilePath = r'/Users/shroom/Desktop/pymongo_project/157C-NoSQL-Project/157C-NoSQL-Project/Test Data/movies_metadata.csv'
+jsonFilePath = r'/Users/shroom/Desktop/pymongo_project/157C-NoSQL-Project/157C-NoSQL-Project/Test Data/test_movie.json'
  
 # Call the make_json function
 make_json(csvFilePath, jsonFilePath)

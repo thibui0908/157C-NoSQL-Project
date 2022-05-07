@@ -1,6 +1,5 @@
 import pymongo
 from pprint import pprint
-import datetime
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["rental"]
