@@ -1,4 +1,4 @@
-from billing import billingHome
+from billing import *
 import pymongo
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -36,7 +36,7 @@ def register():
     name = input("Name: ")
     username = input("Username: ")
     password = input("Password: ")
-    user = User(name, username, password)
+    user = User(user_id = 0, name= name, username=username, password=password)
     userDict = { "name": name, "username": username, "password" : password }
     x = colUsers.insert_one(userDict)
     user.user_id = x.inserted_id
