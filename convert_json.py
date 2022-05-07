@@ -1,5 +1,6 @@
 import csv
 import json
+import datetime
 from tokenize import Double
  
 # Function to convert a CSV to JSON
@@ -43,6 +44,10 @@ def make_json(csvFilePath, jsonFilePath):
             #vote_count
             vote_count = int (rows["vote_count"])
             rows["vote_count"] = vote_count
+
+            #date_released
+            year_released = datetime.strptime(rows["release_date"], '%d/%m/%y')
+            rows["release_date"] = year_released
 
             data.append(rows)
  
