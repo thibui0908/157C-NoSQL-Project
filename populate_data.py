@@ -5,7 +5,7 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["rental"]
 mycol = mydb["movies"]
 
-with open('/Users/ajakasan/Desktop/My Stuff/Class/CS 157C/Project/test.json') as json_file:
+with open('/Users/Diane/cs157c/157C-NoSQL-Project/157C-NoSQL-Project/Test Data/test_movie.json') as json_file:
     data = json.load(json_file)
 
 # mylist = [
