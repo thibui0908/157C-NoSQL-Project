@@ -1,4 +1,4 @@
-from billing import *
+from billing import billingHome
 import pymongo
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
