@@ -1,3 +1,4 @@
+from billing import *
 import pymongo
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -8,12 +9,12 @@ colBilling = mydb["billing"]
 
 class User:
 
-    def __init__(self, name, username, password):
+    def __init__(self, user_id, name, username, password):
+        self.user_id = user_id
         self.name = name
         self.username = username
         self.password = password
         self.loggedIn = True
-
 
 def home():
     print("-------------------------")
@@ -38,19 +39,19 @@ def register():
     user = User(name, username, password)
     userDict = { "name": name, "username": username, "password" : password }
     x = colUsers.insert_one(userDict)
-    # print(x.inserted_id)
+    user.user_id = x.inserted_id
     print("Successfully Registered, " + user.name)
     home()
-
 
 def login():
     inputUsername     = input("Username: ")
     inputPassword     = input("Password: ")
     userDoc           = colUsers.find_one({"username" : inputUsername, "password" : inputPassword})
+    retrievedId       = userDoc["_id"]
     retrievedName     = userDoc["name"]
     retrievedUsername = userDoc["username"]
     retrievedPassword = userDoc["password"]
-    loggedInUser = User(retrievedName, retrievedUsername, retrievedPassword)
+    loggedInUser = User(retrievedId, retrievedName, retrievedUsername, retrievedPassword)
     if(inputPassword == retrievedPassword):
         print("Welcome, " + loggedInUser.name)
     else:
@@ -58,17 +59,24 @@ def login():
         login()
     menu(loggedInUser)
 
+#home menu
 def menu(loggedInUser):
     print("####################")
     print("--------Menu--------")
     print("Account Settings===1")
     print("Logout=============2")
+
+    #routes to billing
+    print("Billing============3")
+
     print("####################")
     menuOption = input("Enter number to choose option: ")
     if(menuOption == "1"):
         accountSetting(loggedInUser)
     elif(menuOption == "2"):
         exit()
+    elif(menuOption == "3"):
+        billingHome(loggedInUser)
     else:
         print("Choose a valid option")
         menu(loggedInUser)
