@@ -152,7 +152,7 @@ def updatePassword(loggedInUser):
     userDoc = { "username": loggedInUser.username }
     newPasswordQuery = { "$set": { "password": updatedPassword } }
     colUsers.update_one(userDoc, newPasswordQuery)
-    print("Name updated Successfully to "+updatedPassword)
+    print("Password updated Successfully to "+updatedPassword)
     loggedInUser.password = updatedPassword
     menu(loggedInUser)
 
