@@ -289,7 +289,7 @@ def browse_films(loggedInUser):
             my_query = {"runtime": {"$lte": float(runtime)}}
         elif query_selection == '6':
             ratings = input("Type the minimum movie rating you would like to search: ")
-            my_query = {"voting_average": {"$gte": float(ratings)}}
+            my_query = {"vote_average": {"$gte": float(ratings)}}
         elif query_selection == '7':
             language = input("Type the movie language you would like to search: ")
             my_query = {"original_language": language}
