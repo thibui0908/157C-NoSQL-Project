@@ -83,9 +83,9 @@ def menu(loggedInUser):
     elif(menuOption == "3"):
         billingHome(loggedInUser)
     elif(menuOption == "4"):
-        rentFilm()
+        rentFilm(loggedInUser)
     elif(menuOption == "5"):
-        returnFilm()
+        returnFilm(loggedInUser)
     else:
         print("Choose a valid option")
         menu(loggedInUser)
@@ -157,23 +157,28 @@ def updatePassword(loggedInUser):
     loggedInUser.password = updatedPassword
     menu(loggedInUser)
 
-def rentFilm(user_id):
+def rentFilm(loggedInUser):
     print("--------------------")
     filmTitle = input("Input film title: ")
-    purchase_date = datetime.date.today()
+    purchase_date = datetime.now().date()
     due_date = purchase_date + timedelta(days=10)
-    #create billing 
-    rentQuery = { "film_title": filmTitle, "purchase_date": purchase_date, "films_due_date": due_date}
-    colBilling.insertOne(rentQuery)
-    #add billing to user
-    billing = colBilling.find(
-        {"film_title": filmTitle, "purchase_date": str(purchase_date)})
-    colUsers.update_one({"_id": user_id} , {"$push": {"transactions": billing}})    
-    #decrease film copy
-    colMovies.updateOne({"title": filmTitle},{"$inc": {"amount_copies": -1}})
+    print(purchase_date)
+    print(due_date)
+    numCopy = colMovies.find_one({"title": filmTitle}, {"amount_copies": 1})
+    print(numCopy)
+
+    # #create billing 
+    # rentQuery = { "film_title": filmTitle, "purchase_date": str(purchase_date), "films_due_date": str(due_date)}
+    # colBilling.insert_one(rentQuery)
+    # #add billing to user
+    # billing = colBilling.find(
+    #     {"film_title": filmTitle, "purchase_date": str(purchase_date)})
+    # colUsers.update_one({"username": loggedInUser.username} , {"$push": {"transactions": billing}})    
+    # #decrease film copy
+    # colMovies.update_one({"title": filmTitle},{"$inc": {"amount_copies": -1}})
 
 
-def returnFilm():
+def returnFilm(loggedInUser):
     print("--------------------")
     #return film
     billingID = input("Input return billing ID: ")
@@ -181,7 +186,7 @@ def returnFilm():
     returnDay = datetime.date.today()
     updateBilling = {"$set":{"films_return_date": returnDay}}
     returnQuery = { returnFilm, updateBilling}
-    colBilling.updateOne(returnQuery)
+    colBilling.update_one(returnQuery)
     dueDay = colBilling.find(returnFilm, {"films_due_date" : 1})
     #check if there is a late fee
     if returnDay > dueDay:
@@ -190,7 +195,7 @@ def returnFilm():
 
     #add increase number of copies
     returnFilmTitle = colBilling.find(returnFilm, {"films_title" : 1})
-    colMovies.updateOne({"title": returnFilmTitle},{"$inc": {"amount_copies": 1}})
+    colMovies.update_one({"title": returnFilmTitle},{"$inc": {"amount_copies": 1}})
 
 
 
