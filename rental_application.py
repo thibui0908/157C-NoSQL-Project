@@ -1,7 +1,10 @@
+from bson import ObjectId
 from billing import *
-from sympy import re
+# from sympy import re
 import pymongo
 from datetime import *
+from datetime import datetime
+from pprint import pprint
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["rental"]
@@ -39,7 +42,8 @@ def register():
     username = input("Username: ")
     password = input("Password: ")
     user = User(name, username, password)
-    userDict = { "name": name, "username": username, "password" : password }
+    transactions = []
+    userDict = { "name": name, "username": username, "password" : password, "transactions": transactions, "balance": 0}
     x = colUsers.insert_one(userDict)
     # print(x.inserted_id)
     print("Successfully Registered, " + user.name)
@@ -162,44 +166,64 @@ def rentFilm(loggedInUser):
     filmTitle = input("Input film title: ")
     purchase_date = datetime.now().date()
     due_date = purchase_date + timedelta(days=10)
-    print(purchase_date)
-    print(due_date)
-    numCopy = colMovies.find_one({"title": filmTitle}, {"amount_copies": 1})
-    print(numCopy)
-
-    # #create billing 
-    # rentQuery = { "film_title": filmTitle, "purchase_date": str(purchase_date), "films_due_date": str(due_date)}
-    # colBilling.insert_one(rentQuery)
-    # #add billing to user
-    # billing = colBilling.find(
-    #     {"film_title": filmTitle, "purchase_date": str(purchase_date)})
-    # colUsers.update_one({"username": loggedInUser.username} , {"$push": {"transactions": billing}})    
-    # #decrease film copy
-    # colMovies.update_one({"title": filmTitle},{"$inc": {"amount_copies": -1}})
+    # print(type(purchase_date))
+    # print(type(due_date))
+    numCopy = colMovies.find_one({"title": filmTitle}, {"_id":0,"amount_copies": 1})
+    # print(numCopy["amount_copies"])
+    if numCopy["amount_copies"]<=0:
+        print("This movie is not avaible to rent. No copies left!")
+        menu(loggedInUser)
+    else :
+        #create billing 
+        rentQuery = { "film_title": filmTitle, "purchase_date": purchase_date.isoformat(), "films_due_date": due_date.isoformat()}
+        colDocument = colBilling.insert_one(rentQuery)
+        # print(colDocument.inserted_id)
+        # Add billing to user
+        colUsers.update_one({"username": loggedInUser.username} , {"$push": {"transactions": colDocument.inserted_id}})
+        userDocument = colUsers.find_one({"username": loggedInUser.username})
+        # print(userDocument["transactions"])
+        # print("Balance before: "+str(userDocument["balance"]))
+        newBalance = userDocument["balance"] + 5
+        colUsers.update_one({"username": loggedInUser.username} , {"$set": {"balance": newBalance}})
+        #decrease film copy
+        colMovies.update_one({"title": filmTitle},{"$inc": {"amount_copies": -1}})
+        print("--------------------")
+        print("New Balance: "+str(newBalance))
+        billingRecipt = colBilling.find_one({"_id":colDocument.inserted_id})
+        print("Recipt:")
+        billingRecipt["billing_id"] = billingRecipt["_id"]
+        del billingRecipt["_id"]
+        billingRecipt["billing_id"] = str(billingRecipt["billing_id"])
+        pprint(billingRecipt)
+        print("Billing ID will be requried for returning film!")
+        menu(loggedInUser)
 
 
 def returnFilm(loggedInUser):
     print("--------------------")
-    #return film
+    # Return film
     billingID = input("Input return billing ID: ")
-    returnFilm = {"billing_id": billingID}
-    returnDay = datetime.date.today()
-    updateBilling = {"$set":{"films_return_date": returnDay}}
-    returnQuery = { returnFilm, updateBilling}
-    colBilling.update_one(returnQuery)
-    dueDay = colBilling.find(returnFilm, {"films_due_date" : 1})
+    returnFilmID = {"_id": ObjectId(billingID)} 
+    returnDate = datetime.now().date().isoformat()
+    # testDate = datetime(2022, 5, 27).date().isoformat()
+    # print(testDate)
+    updateBilling = {"$set":{"films_return_date": returnDate}}
+    #print(returnDate)
+    colBilling.update_one( returnFilmID , updateBilling )
+    dueDate = colBilling.find_one(returnFilmID, {"films_due_date" : 1})
     #check if there is a late fee
-    if returnDay > dueDay:
-        lateFee = returnDay - dueDay
-        print("Late fee: $" + lateFee )
-
-    #add increase number of copies
-    returnFilmTitle = colBilling.find(returnFilm, {"films_title" : 1})
-    colMovies.update_one({"title": returnFilmTitle},{"$inc": {"amount_copies": 1}})
-
-
-
-    
+    #print(dueDate["films_due_date"])
+    if returnDate > dueDate["films_due_date"]:
+        lateFee = abs(datetime.strptime(returnDate, "%Y-%m-%d").date() - datetime.strptime(dueDate["films_due_date"], "%Y-%m-%d").date()).days
+        print("Late fee: $" + str(lateFee) )
+        colUsers.update_one({"username" : loggedInUser.username},{"$inc" : {"balance" : lateFee}})
+        userBalance = colUsers.find_one({"username" : loggedInUser.username}, {"balance":1})
+        print("New Balance: "+str(userBalance["balance"]))
+    # Add increase number of copies
+    returnFilmTitle = colBilling.find_one(returnFilmID, {"film_title" : 1})
+    colMovies.update_one({"title": returnFilmTitle["film_title"]},{"$inc": {"amount_copies": 1}})
+    print("Movie returned! Return date: "+str(returnDate))
+    menu(loggedInUser)
 
 def deleteUser(loggedInUser):
     print("Deleting user will be permanent!")
